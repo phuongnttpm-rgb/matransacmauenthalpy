@@ -1,0 +1,6 @@
+{
+  "name": "Ma Trận Sắc Màu",
+  "description": "Trò chơi học tập tương tác giải mật mã hóa học bằng cách tô màu ma trận dành cho học sinh lớp 10.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

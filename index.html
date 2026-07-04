@@ -1,0 +1,1325 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ma Trận Sắc Màu - Trò Chơi Học Tập Tương Tác</title>
+    <!-- Tailwind CSS qua CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Inter", "sans-serif"],
+              mono: ["JetBrains Mono", "Fira Code", "monospace"],
+            }
+          }
+        }
+      }
+    </script>
+    <!-- MathJax 3 Cấu hình và Script -->
+    <script>
+      window.MathJax = {
+        tex: {
+          inlineMath: [['$', '$'], ['\\(', '\\)']],
+          displayMath: [['$$', '$$'], ['\\[', '\\]']],
+          processEscapes: true
+        },
+        options: {
+          skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+        }
+      };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <style>
+      /* Định dạng MathJax trong các nút đáp án trắc nghiệm */
+      button mjx-container, button .math {
+        font-size: 0.85em !important;
+        display: inline-block !important;
+        margin: 0 2px !important;
+      }
+      
+      /* Kiểu dáng thanh cuộn tùy chỉnh */
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 8px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 8px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 8px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+      }
+
+      /* Vibrant Palette classes */
+      .tag-pink {
+        background-color: #DB2777;
+        color: white;
+        padding: 4px 16px;
+        border-radius: 999px;
+        font-weight: 700;
+        font-size: 14px;
+        letter-spacing: 1px;
+      }
+
+      /* Đảm bảo ma trận hiển thị đúng 20 cột */
+      #matrix-grid {
+        display: grid;
+        grid-template-columns: repeat(20, minmax(0, 1fr));
+      }
+    </style>
+  </head>
+  <body class="bg-[#F0F7FF] min-h-screen py-6 px-4 font-sans antialiased text-slate-800 flex items-center justify-center">
+
+    <!-- Container chính: Phiếu bài tập mượt mà có viền xanh dương bo góc cực kỳ chất lượng -->
+    <div class="w-full max-w-7xl bg-white border-4 border-[#3B82F6] rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.1)] p-6 md:p-8 relative">
+      
+      <!-- HEADER -->
+      <header class="flex flex-col md:flex-row items-center justify-between gap-4 border-b-2 border-slate-100 pb-4 mb-6">
+        <!-- Nhãn Nhóm màu hồng đậm dạng thẻ tag rounded-full -->
+        <div class="bg-[#DB2777] text-white font-bold text-sm py-1.5 px-4 rounded-full tracking-wider shadow-sm shrink-0 self-start md:self-center uppercase">
+          NHÓM........
+        </div>
+        
+        <!-- Tiêu đề lớn in hoa đậm màu đỏ -->
+        <h1 class="text-[#DC2626] font-black text-2xl md:text-3xl lg:text-4xl tracking-wider text-center uppercase flex-1 font-sans">
+          MA TRẬN SẮC MÀU
+        </h1>
+        
+        <!-- Bộ đôi nút Cài đặt và Âm thanh ở góc trên bên phải -->
+        <div class="flex items-center gap-3 shrink-0 self-end md:self-center">
+          <!-- Nút Cài đặt màu vàng -->
+          <button id="btn-settings" class="bg-[#FBBF24] hover:bg-[#F59E0B] text-white w-9 h-9 rounded-[10px] flex items-center justify-center transition-colors duration-150" title="Cấu hình trò chơi">
+            <span class="text-xl">⚙️</span>
+          </button>
+          
+          <!-- Nút Âm thanh màu xanh ngọc -->
+          <button id="btn-sound" class="bg-[#2DD4BF] hover:bg-[#0D9488] text-white w-9 h-9 rounded-[10px] flex items-center justify-center transition-colors duration-150" title="Bật/Tắt âm thanh">
+            <span id="sound-icon" class="text-xl">🔊</span>
+            <span id="sound-text" class="hidden">Âm thanh</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- MAIN CONTENT split into 2 columns -->
+      <main class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        <!-- CỘT TRÁI (Khu vực giải mã & Bảng mật mã) - Chiếm 5 cột trên LG -->
+        <section class="lg:col-span-5 flex flex-col gap-4">
+          
+          <!-- Dòng chữ hướng dẫn & Hộp giải mã thông điệp bí mật -->
+          <div class="p-2">
+            <p id="objective-display" class="text-[#4B5563] text-[13px] italic text-center mb-3">
+              Chọn đáp án đúng để tô màu bảng mật mã và giải mã thông điệp bí mật.
+            </p>
+            
+            <!-- 9 ô tròn nét đứt viền đỏ chứa thông điệp bí mật -->
+            <div id="secret-word-container" class="flex flex-wrap justify-center items-center gap-1.5 py-1">
+              <!-- JS renders letters here, e.g., (H) (O) (A) (H) (O) (C) (V) (U) (I) -->
+            </div>
+          </div>
+
+          <!-- BẢNG MẬT MÃ -->
+          <div class="border-2 border-[#3B82F6] rounded-xl p-3 flex flex-col bg-[#F8FAFC]">
+            <h2 class="text-[#1E40AF] text-base font-extrabold text-center mb-2 tracking-wide uppercase font-sans">
+              BẢNG MẬT MÃ
+            </h2>
+            
+            <!-- Ma trận grid 15x20 -->
+            <div class="overflow-auto flex justify-center py-1">
+              <div id="matrix-grid" class="grid grid-cols-20 gap-0.5 border border-slate-200 p-1 bg-white rounded-lg select-none">
+                <!-- JS dynamically renders 300 cells (15 rows x 20 columns) -->
+              </div>
+            </div>
+          </div>
+
+          <!-- DÒNG NÚT BẤM CHỨC NĂNG DƯỚI CÙNG -->
+          <div class="flex items-center gap-2 pt-1 w-full">
+            <!-- Kiểm tra thông điệp (xanh dương) -->
+            <button id="btn-check-message" class="bg-[#3B82F6] hover:bg-[#2563EB] text-white font-bold py-2.5 px-3 rounded-lg shadow-sm transition-colors duration-150 flex-1 text-xs sm:text-sm flex items-center justify-center gap-1">
+              <span>🏆</span> Kiểm tra
+            </button>
+            <!-- Làm lại câu sai (hồng) -->
+            <button id="btn-retry-failed" class="bg-[#F472B6] hover:bg-[#EC4899] text-white font-bold py-2.5 px-3 rounded-lg shadow-sm transition-colors duration-150 flex-1 text-xs sm:text-sm flex items-center justify-center gap-1">
+              <span>🔄</span> Sửa sai
+            </button>
+            <!-- Làm lại tất cả (hồng nhạt) -->
+            <button id="btn-reset-all" class="bg-[#FCE7F3] hover:bg-[#FBCFE8] text-[#DB2777] font-bold py-2.5 px-3 rounded-lg shadow-sm transition-colors duration-150 flex-1 text-xs sm:text-sm flex items-center justify-center gap-1">
+              <span>♻️</span> Reset
+            </button>
+          </div>
+
+        </section>
+
+        <!-- CỘT PHẢI (Danh sách 9 câu hỏi trắc nghiệm) - Chiếm 7 cột trên LG -->
+        <section class="lg:col-span-7 flex flex-col bg-white border border-slate-200 rounded-2xl p-4 md:p-6 shadow-sm">
+          <h2 class="text-[#1E40AF] text-base font-bold mb-3 flex items-center gap-2 border-b border-slate-100 pb-2">
+            <span>📝</span> Danh sách câu hỏi và thử thách
+          </h2>
+          
+          <!-- Hộp chứa có thanh cuộn dọc chứa 9 câu hỏi trắc nghiệm -->
+          <div id="questions-list" class="custom-scrollbar overflow-y-auto max-h-[640px] pr-1 space-y-4">
+            <!-- JS dynamically renders 9 question cards here -->
+          </div>
+        </section>
+
+      </main>
+
+      <!-- CHÂN TRANG THÔNG TIN THẨM MỸ -->
+      <footer class="mt-8 pt-4 border-t border-slate-100 text-center text-xs text-slate-400 font-medium tracking-wide">
+        Phát triển bởi Chuyên gia EdTech - Tích hợp MathJax & Tailwind CSS
+      </footer>
+    </div>
+
+    <!-- MODAL CÀI ĐẶT (SETTINGS MODAL) -->
+    <div id="modal-settings" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+      <div class="bg-white w-full max-w-3xl rounded-2xl border-4 border-[#3B82F6] p-6 shadow-2xl m-4 max-h-[90vh] overflow-y-auto custom-scrollbar transform scale-95 transition-transform duration-300">
+        
+        <!-- Header modal -->
+        <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-5">
+          <h3 class="text-[#3B82F6] font-black text-2xl flex items-center gap-2">
+            <span>⚙️</span> CẤU HÌNH TRÒ CHƠI MA TRẬN SẮC MÀU
+          </h3>
+          <button id="modal-close-x" class="text-slate-400 hover:text-slate-600 text-3xl font-bold cursor-pointer transition-colors">&times;</button>
+        </div>
+
+        <!-- Nội dung Form cài đặt -->
+        <div class="space-y-6 text-sm">
+          
+          <!-- 1. Hướng dẫn / Mục tiêu -->
+          <div>
+            <label class="block text-slate-700 font-bold mb-2">Tên / Nội dung mục tiêu hiển thị:</label>
+            <input type="text" id="input-objective" class="w-full border-2 border-slate-200 rounded-xl px-4 py-2.5 focus:border-[#3B82F6] focus:ring-0 outline-none transition-colors" placeholder="Nhập mục tiêu hoặc hướng dẫn bài học...">
+          </div>
+
+          <!-- 2. Chọn chủ đề hình ảnh (Preset Pixel Art) và cấu hình 9 chữ cái thông điệp bí mật -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-slate-700 font-bold mb-2">Chọn hình vẽ ẩn trong Ma trận:</label>
+              <select id="select-preset" class="w-full border-2 border-slate-200 bg-white rounded-xl px-4 py-2.5 focus:border-[#3B82F6] focus:ring-0 outline-none transition-colors font-medium">
+                <option value="flower">🌻 Bông hoa hướng dương</option>
+                <option value="beaker">🧪 Bình tam giác cắm hoa</option>
+                <option value="cat">🐱 Chú mèo ngộ nghĩnh</option>
+                <option value="smiley">😀 Mặt cười hạnh phúc</option>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-slate-700 font-bold mb-2">Thông điệp bí mật (9 chữ cái):</label>
+              <input type="text" id="input-secret-word" class="w-full border-2 border-slate-200 rounded-xl px-4 py-2.5 focus:border-[#3B82F6] focus:ring-0 outline-none transition-colors uppercase font-mono tracking-widest text-lg text-red-600 font-bold" maxlength="9" placeholder="Vd: HOAHOCVUI">
+              <span class="text-xs text-slate-400 mt-1 block">Bắt buộc phải đủ đúng 9 chữ cái viết tắt hoặc có nghĩa.</span>
+            </div>
+          </div>
+
+          <!-- 3. Cấu hình Ngân hàng câu hỏi dưới dạng JSON -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <label class="block text-slate-700 font-bold">Ngân hàng 9 câu hỏi trắc nghiệm (Dạng JSON):</label>
+              <button id="btn-reset-json-default" class="text-xs text-blue-600 hover:text-blue-800 font-bold flex items-center gap-1">
+                <span>🔄</span> Khôi phục mặc định
+              </button>
+            </div>
+            <textarea id="textarea-questions" rows="8" class="w-full border-2 border-slate-200 rounded-xl px-4 py-3 font-mono text-xs focus:border-[#3B82F6] focus:ring-0 outline-none bg-slate-50 transition-colors custom-scrollbar" placeholder="Nhập mảng JSON gồm 9 câu hỏi..."></textarea>
+            <span class="text-xs text-slate-400 mt-1 block">Yêu cầu mảng JSON phải chứa chính xác 9 đối tượng câu hỏi với các thuộc tính: <code>text</code>, <code>A</code>, <code>B</code>, <code>C</code>, <code>D</code>, và <code>correct</code> ('A'|'B'|'C'|'D'). Hỗ trợ MathJax hoàn hảo.</span>
+          </div>
+
+          <!-- 4. Âm thanh tùy chọn -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-150">
+            <div>
+              <label class="block text-slate-700 font-bold mb-1 flex items-center gap-1.5 text-xs">
+                <span>🎵</span> Nhạc khi trả lời ĐÚNG (MP3/WAV):
+              </label>
+              <input type="file" id="file-audio-correct" accept="audio/*" class="w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100 cursor-pointer">
+              <div id="status-audio-correct" class="text-[11px] text-slate-400 mt-1 truncate">Sử dụng synthesizer mặc định</div>
+            </div>
+            
+            <div>
+              <label class="block text-slate-700 font-bold mb-1 flex items-center gap-1.5 text-xs">
+                <span>🎵</span> Nhạc khi trả lời SAI (MP3/WAV):
+              </label>
+              <input type="file" id="file-audio-incorrect" accept="audio/*" class="w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-rose-50 file:text-rose-700 hover:file:bg-rose-100 cursor-pointer">
+              <div id="status-audio-incorrect" class="text-[11px] text-slate-400 mt-1 truncate">Sử dụng synthesizer mặc định</div>
+            </div>
+          </div>
+
+          <!-- Nút Lưu & Đóng dưới cùng -->
+          <div class="flex items-center justify-end gap-3 border-t border-slate-100 pt-4">
+            <button id="modal-btn-cancel" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 px-5 rounded-lg transition-colors">
+              Hủy
+            </button>
+            <button id="modal-btn-save" class="bg-[#3B82F6] hover:bg-[#2563EB] text-white font-bold py-2 px-6 rounded-lg shadow-md transition-colors flex items-center gap-2">
+              <span>💾</span> Lưu cấu hình
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL POPUP THÔNG BÁO CHIẾN THẮNG / KẾT QUẢ (VICTORY MODAL) -->
+    <div id="modal-victory" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+      <div class="bg-white w-full max-w-lg rounded-2xl border-4 border-[#3B82F6] p-8 shadow-2xl m-4 text-center transform scale-95 transition-transform duration-300 relative overflow-hidden">
+        
+        <!-- Canvas confetti cục bộ -->
+        <canvas id="victory-canvas" class="absolute inset-0 pointer-events-none w-full h-full z-0"></canvas>
+        
+        <div class="relative z-10">
+          <div class="text-6xl mb-4 animate-bounce">🏆</div>
+          <h3 class="text-[#3B82F6] font-black text-3xl md:text-4xl mb-3 tracking-wide uppercase">
+            XUẤT SẮC HOÀN THÀNH!
+          </h3>
+          <p class="text-slate-600 font-medium mb-6">
+            Chúc mừng nhóm của bạn đã hoàn thành xuất sắc phiếu bài tập nhóm và giải mã thành công thông điệp bí mật!
+          </p>
+
+          <!-- Hiện thông điệp giải mã thành công -->
+          <div class="bg-blue-50 rounded-xl p-4 border border-blue-100 mb-6">
+            <div class="text-xs uppercase text-[#3B82F6] tracking-widest font-bold mb-1">Thông điệp giải mã được:</div>
+            <div id="victory-message-text" class="text-3xl md:text-4xl font-extrabold text-[#1E40AF] tracking-[0.25em] font-mono select-all">
+              H O A H O C V U I
+            </div>
+          </div>
+
+          <p class="text-xs text-slate-400 mb-6">
+            Hãy chiêm ngưỡng tác phẩm pixel art đầy sắc màu vừa được tô hoàn thiện trên bảng mật mã!
+          </p>
+
+          <!-- Nút Đóng -->
+          <button id="victory-btn-close" class="bg-[#3B82F6] hover:bg-[#2563EB] active:bg-[#1E40AF] text-white font-bold py-2.5 px-8 rounded-lg shadow-md transition-colors">
+            Tuyệt vời! Quay lại xem
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CUSTOM DIALOG MODAL (CONFIRM & ALERT REPLACE) -->
+    <div id="custom-dialog" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+      <div class="bg-white w-full max-w-md rounded-2xl border-4 border-[#3B82F6] p-6 shadow-2xl m-4 transform scale-95 transition-transform duration-300 text-center relative">
+        <div id="custom-dialog-icon" class="text-4xl mb-3">❓</div>
+        <h3 id="custom-dialog-title" class="text-xl font-bold text-slate-800 mb-2 font-sans">Xác nhận</h3>
+        <p id="custom-dialog-message" class="text-slate-600 text-sm mb-6 leading-relaxed font-medium">Bạn có chắc chắn muốn thực hiện hành động này?</p>
+        <div class="flex items-center justify-center gap-3">
+          <button id="custom-dialog-btn-cancel" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 px-6 rounded-lg transition-colors text-sm">
+            Hủy
+          </button>
+          <button id="custom-dialog-btn-ok" class="bg-[#3B82F6] hover:bg-[#2563EB] text-white font-bold py-2.5 px-7 rounded-lg shadow-md transition-colors text-sm">
+            Đồng ý
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION CHỈ BÁO NHANH -->
+    <div id="toast-notif" class="fixed bottom-5 right-5 bg-slate-800 text-white text-sm font-semibold px-4 py-2.5 rounded-lg shadow-xl z-50 flex items-center gap-2 transform translate-y-10 opacity-0 transition-all duration-300 pointer-events-none">
+      <span id="toast-icon">ℹ️</span>
+      <span id="toast-msg">Thông báo mẫu!</span>
+    </div>
+
+    <!-- SCRIPT CHÍNH ĐIỀU KHIỂN GAMEPLAY -->
+    <script>
+      // ----------------- CẤU HÌNH & DỮ LIỆU PRESENTS -----------------
+      const PRESETS = {
+        flower: {
+          name: "Bông hoa hướng dương",
+          parts: [
+            [[2, 9], [2, 10], [3, 8], [3, 9], [3, 10], [3, 11]], // Q1 - Top Petals (Yellow #F59E0B)
+            [[4, 6], [5, 6], [4, 7], [4, 8], [5, 7], [5, 8]], // Q2 - Left Petals (Yellow #FBBF24)
+            [[4, 11], [4, 12], [4, 13], [5, 11], [5, 12], [5, 13]], // Q3 - Right Petals (Yellow #FBBF24)
+            [[6, 8], [6, 9], [6, 10], [6, 11], [7, 9], [7, 10]], // Q4 - Bottom Petals (Yellow #F59E0B)
+            [[4, 9], [4, 10], [5, 9], [5, 10]], // Q5 - Center (Brown #78350F)
+            [[8, 9], [9, 9], [10, 9], [11, 9]], // Q6 - Stem (Green #16A34A)
+            [[8, 7], [8, 8], [9, 7], [9, 8]], // Q7 - Left Leaf (Green #15803D)
+            [[9, 10], [9, 11], [10, 11], [10, 12]], // Q8 - Right Leaf (Green #15803D)
+            [[12, 7], [12, 8], [12, 9], [12, 10], [12, 11], [12, 12], [13, 8], [13, 9], [13, 10], [13, 11], [14, 8], [14, 9], [14, 10], [14, 11]], // Q9 - Clay Pot (Orange #D97706)
+          ],
+          colors: [
+            '#F59E0B', '#FBBF24', '#FBBF24', '#F59E0B', '#78350F', '#16A34A', '#15803D', '#15803D', '#D97706'
+          ]
+        },
+        beaker: {
+          name: "Bình tam giác cắm hoa hướng dương",
+          parts: [
+            [[2, 9], [2, 10], [3, 9], [3, 10]], // Q1 - Sunflower Center (Brown #78350F)
+            [[1, 8], [1, 9], [1, 10], [1, 11], [2, 7], [2, 8], [2, 11], [2, 12], [3, 7], [3, 8], [3, 11], [3, 12], [4, 8], [4, 9], [4, 10], [4, 11]], // Q2 - Sunflower Petals (Yellow #FBBF24)
+            [[5, 9], [6, 9], [7, 9], [8, 9], [9, 9], [10, 9], [11, 9], [12, 9], [13, 9], [5, 7], [5, 8], [5, 11], [5, 12]], // Q3 - Stem & Leaves (Green #16A34A)
+            [[6, 8], [7, 8], [8, 8], [6, 11], [7, 11], [8, 11], [6, 7], [6, 12]], // Q4 - Glass Neck (Cyan #22D3EE)
+            [[9, 7], [10, 6], [11, 5], [12, 4], [13, 3], [14, 2]], // Q5 - Glass Left Wall (Blue #3B82F6)
+            [[9, 12], [10, 13], [11, 14], [12, 15], [13, 16], [14, 17]], // Q6 - Glass Right Wall (Blue #3B82F6)
+            [[14, 3], [14, 4], [14, 5], [14, 6], [14, 7], [14, 8], [14, 9], [14, 10], [14, 11], [14, 12], [14, 13], [14, 14], [14, 15], [14, 16]], // Q7 - Glass Base (Blue #3B82F6)
+            [[11, 6], [11, 7], [11, 8], [11, 10], [11, 11], [11, 12], [11, 13], [12, 5], [12, 6], [12, 7], [12, 8], [12, 10], [12, 11], [12, 12], [12, 13], [12, 14]], // Q8 - Liquid Top/Mid Layer (Pink #EC4899)
+            [[13, 4], [13, 5], [13, 6], [13, 7], [13, 8], [13, 10], [13, 11], [13, 12], [13, 13], [13, 14], [13, 15]] // Q9 - Liquid Bottom Layer (Pink #EC4899)
+          ],
+          colors: [
+            '#78350F', '#FBBF24', '#16A34A', '#22D3EE', '#3B82F6', '#3B82F6', '#3B82F6', '#EC4899', '#EC4899'
+          ]
+        },
+        cat: {
+          name: "Chú mèo tinh nghịch",
+          parts: [
+            [[3, 6], [4, 6]], // Q1 - Left Ear Pink Inner (#FDA4AF)
+            [[3, 13], [4, 13]], // Q2 - Right Ear Pink Inner (#FDA4AF)
+            [[1, 5], [2, 5], [2, 6], [3, 4], [3, 5], [4, 4], [4, 5], [4, 7], [4, 8], [4, 9], [4, 10], [4, 11], [4, 12], [4, 14], [1, 14], [2, 14], [2, 13], [3, 14], [3, 15], [4, 15], [5, 5], [5, 6], [5, 8], [5, 9], [5, 10], [5, 11], [5, 13], [5, 14], [6, 5], [6, 6], [6, 7], [6, 12], [6, 13], [6, 14], [7, 5], [7, 6], [7, 7], [7, 8], [7, 11], [7, 12], [7, 13], [7, 14]], // Q3 - Head Orange (#F97316)
+            [[5, 7], [5, 12], [6, 3], [6, 4], [7, 4], [6, 15], [6, 16], [7, 15]], // Q4 - Eyes & Whiskers Black (#0F172A)
+            [[6, 8], [6, 9], [6, 10], [6, 11], [7, 9], [7, 10]], // Q5 - Muzzle Yellow (#FEF08A)
+            [[8, 6], [8, 7], [8, 8], [8, 11], [8, 12], [8, 13], [9, 5], [9, 6], [9, 7], [9, 12], [9, 13], [9, 14], [10, 5], [10, 6], [10, 7], [10, 12], [10, 13], [10, 14], [11, 5], [11, 6], [11, 7], [11, 8], [11, 11], [11, 12], [11, 13], [11, 14], [12, 7], [12, 8], [12, 9], [12, 10], [12, 11], [12, 12], [12, 13], [13, 6], [13, 9], [13, 10], [13, 13]], // Q6 - Torso Back Golden Brown (#D97706)
+            [[8, 9], [8, 10], [9, 8], [9, 9], [9, 10], [9, 11], [10, 8], [10, 9], [10, 10], [10, 11], [11, 9], [11, 10]], // Q7 - Chest Cream White (#FEF9C3)
+            [[12, 5], [13, 4], [13, 5], [12, 14], [13, 14], [13, 15], [13, 7], [13, 8], [13, 11], [13, 12]], // Q8 - Paws Pure White (#FFFFFF)
+            [[12, 15], [12, 16], [11, 16], [11, 17], [10, 17], [9, 17], [8, 17], [8, 16], [7, 16], [7, 15]] // Q9 - Tail Orange (#F97316)
+          ],
+          colors: [
+            '#FDA4AF', '#FDA4AF', '#F97316', '#0F172A', '#FEF08A', '#D97706', '#FEF9C3', '#FFFFFF', '#F97316'
+          ]
+        },
+        smiley: {
+          name: "Mặt cười hạnh phúc",
+          parts: [
+            [[1, 8], [1, 9], [1, 10], [1, 11], [2, 6], [2, 7], [2, 8], [2, 9], [2, 10], [2, 11], [2, 12], [2, 13], [3, 5], [3, 14], [4, 4], [4, 15], [5, 4], [5, 15]], // Q1 - Top Forehead & Outline (Gold `#F59E0B`)
+            [[6, 3], [6, 16], [7, 3], [7, 16], [8, 3], [8, 16], [9, 4], [9, 15], [10, 4], [10, 15], [11, 5], [11, 14]], // Q2 - Outer Side Cheeks Outline (Gold `#F59E0B`)
+            [[4, 6], [4, 7], [5, 6], [5, 7]], // Q3 - Left Eye (Deep Slate `#1F2937`)
+            [[4, 12], [4, 13], [5, 12], [5, 13]], // Q4 - Right Eye (Deep Slate `#1F2937`)
+            [[6, 5], [6, 6], [7, 5], [7, 6], [6, 13], [6, 14], [7, 13], [7, 14]], // Q5 - Blushing Rosy Cheeks (Warm Pink `#FB7185`)
+            [[8, 7], [8, 12], [9, 7], [9, 8], [9, 9], [9, 10], [9, 11], [9, 12], [10, 8], [10, 9], [10, 10], [10, 11]], // Q6 - Joyous Smile Mouth (Cute Red `#EF4444`)
+            [[3, 6], [3, 7], [3, 8], [3, 9], [3, 10], [3, 11], [3, 12], [3, 13], [4, 5], [4, 8], [4, 9], [4, 10], [4, 11], [4, 14], [5, 5], [5, 8], [5, 9], [5, 10], [5, 11], [5, 14]], // Q7 - Upper Face Fill (Sunshine Yellow `#FBBF24`)
+            [[6, 4], [6, 7], [6, 8], [6, 9], [6, 10], [6, 11], [6, 12], [6, 15], [7, 4], [7, 7], [7, 8], [7, 9], [7, 10], [7, 11], [7, 12], [7, 15], [8, 4], [8, 5], [8, 6], [8, 8], [8, 9], [8, 10], [8, 11], [8, 13], [8, 14], [8, 15], [9, 5], [9, 6], [9, 13], [9, 14], [10, 5], [10, 6], [10, 7], [10, 12], [10, 13], [10, 14], [11, 6], [11, 7], [11, 8], [11, 9], [11, 10], [11, 11], [11, 12], [11, 13]], // Q8 - Lower Face Fill (Sunshine Yellow `#FBBF24`)
+            [[12, 6], [12, 7], [12, 8], [12, 9], [12, 10], [12, 11], [12, 12], [12, 13], [13, 8], [13, 9], [13, 10], [13, 11]] // Q9 - Bottom Chin Outline (Gold `#F59E0B`)
+          ],
+          colors: [
+            '#F59E0B', '#F59E0B', '#1F2937', '#1F2937', '#FB7185', '#EF4444', '#FBBF24', '#FBBF24', '#F59E0B'
+          ]
+        }
+      };
+
+      const DEFAULT_QUESTIONS = [
+        {
+          "text": "Phản ứng nào sau đây là phản ứng toả nhiệt?",
+          "A": "Phản ứng nhiệt phân muối KNO<sub>3</sub>.",
+          "B": "Phản ứng phân huỷ khí NH<sub>3</sub>.",
+          "C": "Phản ứng oxi hoá glucose trong cơ thể.",
+          "D": "Phản ứng hoà tan NH<sub>4</sub>Cl trong nước.",
+          "correct": "C"
+        },
+        {
+          "text": "Phản ứng nào sau đây có thể tự xảy ra ở điều kiện thường?",
+          "A": "Phản ứng nhiệt phân Cu(OH)<sub>2</sub>.",
+          "B": "Phản ứng giữa H<sub>2</sub> và O<sub>2</sub> trong hỗn hợp khí.",
+          "C": "Phản ứng giữa Zn và dung dịch H<sub>2</sub>SO<sub>4</sub> loãng.",
+          "D": "Phản ứng đốt cháy cồn.",
+          "correct": "C"
+        },
+        {
+          "text": "Nung KNO<sub>3</sub> lên 550°C xảy ra phản ứng: KNO<sub>3</sub>(s) → KNO<sub>2</sub>(s) + ½ O<sub>2</sub>(g). Phản ứng nhiệt phân KNO<sub>3</sub> là:",
+          "A": "Toả nhiệt, có ΔH < 0.",
+          "B": "Thu nhiệt, có ΔH > 0.",
+          "C": "Toả nhiệt, có ΔH > 0.",
+          "D": "Thu nhiệt, có ΔH < 0.",
+          "correct": "B"
+        },
+        {
+          "text": "Cho phản ứng: 2NO<sub>2</sub>(g) (đỏ nâu) → N<sub>2</sub>O<sub>4</sub>(g) (không màu). Biết NO<sub>2</sub> và N<sub>2</sub>O<sub>4</sub> có Δ<sub>f</sub>H°<sub>298</sub> tương ứng là 33,18 kJ/mol và 9,16 kJ/mol. Điều này chứng tỏ phản ứng:",
+          "A": "Toả nhiệt, NO<sub>2</sub> bền vững hơn N<sub>2</sub>O<sub>4</sub>.",
+          "B": "Thu nhiệt, NO<sub>2</sub> bền vững hơn N<sub>2</sub>O<sub>4</sub>.",
+          "C": "Toả nhiệt, N<sub>2</sub>O<sub>4</sub> bền vững hơn NO<sub>2</sub>.",
+          "D": "Thu nhiệt, N<sub>2</sub>O<sub>4</sub> bền vững hơn NO<sub>2</sub>.",
+          "correct": "C"
+        },
+        {
+          "text": "Phát biểu nào sau đây không đúng?",
+          "A": "Các phản ứng phân huỷ thường là phản ứng thu nhiệt.",
+          "B": "Phản ứng càng toả ra nhiều nhiệt càng dễ tự xảy ra.",
+          "C": "Phản ứng oxi hoá chất béo cung cấp nhiệt cho cơ thể.",
+          "D": "Các phản ứng khi đun nóng đều dễ xảy ra hơn.",
+          "correct": "D"
+        },
+        {
+          "text": "Dấu của biến thiên enthalpy cho biết phản ứng toả nhiệt hay thu nhiệt. Phát biểu nào sau đây đúng?",
+          "A": "Δ<sub>r</sub>H > 0: phản ứng toả nhiệt.",
+          "B": "Δ<sub>r</sub>H < 0: phản ứng toả nhiệt.",
+          "C": "Δ<sub>r</sub>H = 0: phản ứng toả nhiệt.",
+          "D": "Δ<sub>r</sub>H < 0: phản ứng thu nhiệt.",
+          "correct": "B"
+        },
+        {
+          "text": "Cho phản ứng trung hoà: HCl(aq) + NaOH(aq) → NaCl(aq) + H<sub>2</sub>O(l) có ΔH = -57,3 kJ. Phát biểu nào sau đây không đúng?",
+          "A": "Cho 1 mol HCl tác dụng với NaOH dư toả nhiệt lượng là 57,3 kJ.",
+          "B": "Cho HCl dư tác dụng với 1 mol NaOH thu nhiệt lượng là 57,3 kJ.",
+          "C": "Cho 1 mol HCl tác dụng với 1 mol NaOH toả nhiệt lượng là 57,3 kJ.",
+          "D": "Cho 2 mol HCl tác dụng với NaOH dư toả nhiệt lượng là 114,6 kJ.",
+          "correct": "B"
+        },
+        {
+          "text": "Cho các phản ứng:<br>(1) 2NaHCO<sub>3</sub>(s) → Na<sub>2</sub>CO<sub>3</sub>(s) + H<sub>2</sub>O(l) + CO<sub>2</sub>(g) có Δ<sub>r</sub>H°<sub>298</sub> = +20,33 kJ;<br>(2) 4NH<sub>3</sub>(g) + 3O<sub>2</sub>(g) → 2N<sub>2</sub>(g) + 6H<sub>2</sub>O(l) có Δ<sub>r</sub>H°<sub>298</sub> = -1531 kJ.<br>Nhận xét nào sau đây đúng?",
+          "A": "Phản ứng (1) thu nhiệt, phản ứng (2) toả nhiệt.",
+          "B": "Cả 2 phản ứng đều toả nhiệt.",
+          "C": "Cả 2 phản ứng đều thu nhiệt.",
+          "D": "Phản ứng (1) toả nhiệt, phản ứng (2) thu nhiệt.",
+          "correct": "A"
+        },
+        {
+          "text": "Biến thiên enthalpy chuẩn của một phản ứng hoá học, kí hiệu là Δ<sub>r</sub>H°<sub>298</sub>, được xác định ở điều kiện chuẩn nào sau đây?",
+          "A": "Nhiệt độ 25°C (298 K), áp suất 1 bar (với chất khí) hoặc nồng độ 1 mol/L (với chất tan).",
+          "B": "Nhiệt độ 0°C (273 K), áp suất 1 bar (với chất khí) hoặc nồng độ 1 mol/L (với chất tan).",
+          "C": "Nhiệt độ 25°C (298 K), áp suất 1 atm (với chất khí) hoặc nồng độ 1 mol/L (với chất tan).",
+          "D": "Nhiệt độ 100°C (373 K), áp suất 1 bar (với chất khí) hoặc nồng độ 1 mol/L (với chất tan).",
+          "correct": "A"
+        }
+      ];
+
+      // ----------------- TRẠNG THÁI TOÀN CỤC CỦA GAME -----------------
+      let state = {
+        objective: "Chọn đáp án đúng để tô màu bảng mật mã và giải mã thông điệp bí mật.",
+        preset: "flower", // flower, beaker, cat, smiley
+        secretWord: "HOAHOCVUI", // Phải đủ đúng 9 kí tự
+        questions: JSON.parse(JSON.stringify(DEFAULT_QUESTIONS)),
+        soundEnabled: true,
+        userAnswers: Array(9).fill(null), // Lưu kí tự đã chọn: 'A', 'B', 'C', 'D' hoặc null
+        questionStates: Array(9).fill('unanswered'), // 'unanswered', 'correct', 'incorrect'
+        matrixLetters: [], // Ma trận 15x20 chữ cái ngẫu nhiên cố định
+        audioCorrect: null, // Base64 Audio data URL hoặc null
+        audioIncorrect: null // Base64 Audio data URL hoặc null
+      };
+
+      // Tải trạng thái từ localStorage nếu có
+      function loadState() {
+        const saved = localStorage.getItem('matran_sacmau_state');
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            if (parsed.objective) state.objective = parsed.objective;
+            if (parsed.preset) state.preset = parsed.preset;
+            if (parsed.secretWord && parsed.secretWord.length === 9) state.secretWord = parsed.secretWord;
+            
+            // Check if saved questions contain LaTeX strange characters like "\\(" or "\\text"
+            let shouldResetQuestions = false;
+            if (parsed.questions && parsed.questions.length === 9) {
+              const hasLatex = parsed.questions.some(q => 
+                (q.text && (q.text.includes('\\(') || q.text.includes('\\text') || q.text.includes('mjx-'))) ||
+                (q.A && (q.A.includes('\\(') || q.A.includes('\\text')))
+              );
+              if (hasLatex) {
+                shouldResetQuestions = true;
+              } else {
+                state.questions = parsed.questions;
+              }
+            } else {
+              shouldResetQuestions = true;
+            }
+
+            if (shouldResetQuestions) {
+              state.questions = JSON.parse(JSON.stringify(DEFAULT_QUESTIONS));
+              state.userAnswers = Array(9).fill(null);
+              state.questionStates = Array(9).fill('unanswered');
+            } else {
+              // Sửa lỗi câu 7 nếu người dùng đang dùng phiên bản cũ chứa đáp án cũ (D)
+              if (state.questions[6] && state.questions[6].correct === 'D') {
+                state.questions[6] = JSON.parse(JSON.stringify(DEFAULT_QUESTIONS[6]));
+                // Chỉ reset riêng câu 7 về chưa trả lời để tránh làm mất tiến trình các câu khác
+                parsed.userAnswers[6] = null;
+                parsed.questionStates[6] = 'unanswered';
+              }
+
+              if (parsed.soundEnabled !== undefined) state.soundEnabled = parsed.soundEnabled;
+              if (parsed.audioCorrect) state.audioCorrect = parsed.audioCorrect;
+              if (parsed.audioIncorrect) state.audioIncorrect = parsed.audioIncorrect;
+              
+              // Khôi phục câu trả lời cũ nếu vẫn hợp lệ
+              if (parsed.userAnswers && parsed.userAnswers.length === 9) state.userAnswers = parsed.userAnswers;
+              if (parsed.questionStates && parsed.questionStates.length === 9) state.questionStates = parsed.questionStates;
+            }
+          } catch (e) {
+            console.error("Lỗi khi khôi phục trạng thái cũ:", e);
+          }
+        }
+        
+        // Tạo bảng chữ cái ma trận cố định
+        generateMatrixLetters();
+      }
+
+      // Lưu trạng thái hiện tại vào localStorage
+      function saveStateToStorage() {
+        localStorage.setItem('matran_sacmau_state', JSON.stringify({
+          objective: state.objective,
+          preset: state.preset,
+          secretWord: state.secretWord,
+          questions: state.questions,
+          soundEnabled: state.soundEnabled,
+          userAnswers: state.userAnswers,
+          questionStates: state.questionStates,
+          audioCorrect: state.audioCorrect,
+          audioIncorrect: state.audioIncorrect
+        }));
+      }
+
+      // Tạo 15x20 chữ cái hoa ngẫu nhiên
+      function generateMatrixLetters() {
+        const rows = 15;
+        const cols = 20;
+        state.matrixLetters = [];
+        const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        for (let r = 0; r < rows; r++) {
+          let rowArray = [];
+          for (let c = 0; c < cols; c++) {
+            const randChar = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
+            rowArray.push(randChar);
+          }
+          state.matrixLetters.push(rowArray);
+        }
+      }
+
+      // ----------------- HỆ THỐNG PHÁT ÂM THANH SYNTHESISER -----------------
+      let audioCtx = null;
+      function initAudioContext() {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+      }
+
+      function playSoundCorrect() {
+        if (!state.soundEnabled) return;
+        
+        // Nếu có nhạc tùy chỉnh, chơi nhạc tùy chỉnh
+        if (state.audioCorrect) {
+          try {
+            const audio = new Audio(state.audioCorrect);
+            audio.play();
+            return;
+          } catch (e) {
+            console.error("Lỗi chơi nhạc đúng tải lên:", e);
+          }
+        }
+
+        // Dự phòng (Fallback) - Tổng hợp âm thanh vui nhộn (Major Arpeggio)
+        try {
+          initAudioContext();
+          if (audioCtx.state === 'suspended') audioCtx.resume();
+          const now = audioCtx.currentTime;
+
+          // Note 1: C5
+          const osc1 = audioCtx.createOscillator();
+          const gain1 = audioCtx.createGain();
+          osc1.type = 'sine';
+          osc1.frequency.setValueAtTime(523.25, now);
+          gain1.gain.setValueAtTime(0, now);
+          gain1.gain.linearRampToValueAtTime(0.15, now + 0.05);
+          gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+          osc1.connect(gain1);
+          gain1.connect(audioCtx.destination);
+          osc1.start(now);
+          osc1.stop(now + 0.25);
+
+          // Note 2: E5
+          const osc2 = audioCtx.createOscillator();
+          const gain2 = audioCtx.createGain();
+          osc2.type = 'sine';
+          osc2.frequency.setValueAtTime(659.25, now + 0.08);
+          gain2.gain.setValueAtTime(0, now + 0.08);
+          gain2.gain.linearRampToValueAtTime(0.15, now + 0.13);
+          gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+          osc2.connect(gain2);
+          gain2.connect(audioCtx.destination);
+          osc2.start(now + 0.08);
+          osc2.stop(now + 0.35);
+
+          // Note 3: G5
+          const osc3 = audioCtx.createOscillator();
+          const gain3 = audioCtx.createGain();
+          osc3.type = 'sine';
+          osc3.frequency.setValueAtTime(783.99, now + 0.16);
+          gain3.gain.setValueAtTime(0, now + 0.16);
+          gain3.gain.linearRampToValueAtTime(0.2, now + 0.21);
+          gain3.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+          osc3.connect(gain3);
+          gain3.connect(audioCtx.destination);
+          osc3.start(now + 0.16);
+          osc3.stop(now + 0.5);
+        } catch (e) {
+          console.error("Synthesizer error:", e);
+        }
+      }
+
+      function playSoundIncorrect() {
+        if (!state.soundEnabled) return;
+
+        // Nếu có nhạc tùy chỉnh, chơi nhạc tùy chỉnh
+        if (state.audioIncorrect) {
+          try {
+            const audio = new Audio(state.audioIncorrect);
+            audio.play();
+            return;
+          } catch (e) {
+            console.error("Lỗi chơi nhạc sai tải lên:", e);
+          }
+        }
+
+        // Dự phòng (Fallback) - Âm thanh buồn (Slide xuống)
+        try {
+          initAudioContext();
+          if (audioCtx.state === 'suspended') audioCtx.resume();
+          const now = audioCtx.currentTime;
+
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(220, now); // A3
+          osc.frequency.exponentialRampToValueAtTime(110, now + 0.3); // A2 sliding down
+          
+          gain.gain.setValueAtTime(0, now);
+          gain.gain.linearRampToValueAtTime(0.2, now + 0.05);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+          
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.35);
+        } catch (e) {
+          console.error("Synthesizer error:", e);
+        }
+      }
+
+      // ----------------- TOAST HIỂN THỊ CHỈ BÁO NHANH -----------------
+      let toastTimeout = null;
+      function showToast(message, icon = "ℹ️") {
+        const toast = document.getElementById('toast-notif');
+        const toastMsg = document.getElementById('toast-msg');
+        const toastIcon = document.getElementById('toast-icon');
+        
+        toastMsg.textContent = message;
+        toastIcon.textContent = icon;
+        
+        // Reset timeout
+        if (toastTimeout) clearTimeout(toastTimeout);
+        
+        // Show
+        toast.classList.remove('translate-y-10', 'opacity-0');
+        toast.classList.add('translate-y-0', 'opacity-100');
+        
+        // Hide after 3s
+        toastTimeout = setTimeout(() => {
+          toast.classList.remove('translate-y-0', 'opacity-100');
+          toast.classList.add('translate-y-10', 'opacity-0');
+        }, 3000);
+      }
+
+      // ----------------- CUSTOM DIALOG MODAL HANDLERS -----------------
+      function customConfirm(message, icon = "❓", title = "Xác nhận") {
+        return new Promise((resolve) => {
+          const dialog = document.getElementById('custom-dialog');
+          const dialogIcon = document.getElementById('custom-dialog-icon');
+          const dialogTitle = document.getElementById('custom-dialog-title');
+          const dialogMsg = document.getElementById('custom-dialog-message');
+          const btnCancel = document.getElementById('custom-dialog-btn-cancel');
+          const btnOk = document.getElementById('custom-dialog-btn-ok');
+
+          dialogIcon.textContent = icon;
+          dialogTitle.textContent = title;
+          dialogMsg.textContent = message;
+
+          btnCancel.classList.remove('hidden');
+
+          const newBtnOk = btnOk.cloneNode(true);
+          const newBtnCancel = btnCancel.cloneNode(true);
+          btnOk.parentNode.replaceChild(newBtnOk, btnOk);
+          btnCancel.parentNode.replaceChild(newBtnCancel, btnCancel);
+
+          dialog.classList.remove('hidden');
+          setTimeout(() => {
+            dialog.classList.remove('opacity-0');
+            dialog.firstElementChild.classList.remove('scale-95');
+            dialog.firstElementChild.classList.add('scale-100');
+          }, 50);
+
+          const closeDialog = (result) => {
+            dialog.classList.add('opacity-0');
+            dialog.firstElementChild.classList.remove('scale-100');
+            dialog.firstElementChild.classList.add('scale-95');
+            setTimeout(() => {
+              dialog.classList.add('hidden');
+              resolve(result);
+            }, 300);
+          };
+
+          newBtnOk.addEventListener('click', () => closeDialog(true));
+          newBtnCancel.addEventListener('click', () => closeDialog(false));
+        });
+      }
+
+      function customAlert(message, icon = "⚠️", title = "Thông báo") {
+        return new Promise((resolve) => {
+          const dialog = document.getElementById('custom-dialog');
+          const dialogIcon = document.getElementById('custom-dialog-icon');
+          const dialogTitle = document.getElementById('custom-dialog-title');
+          const dialogMsg = document.getElementById('custom-dialog-message');
+          const btnCancel = document.getElementById('custom-dialog-btn-cancel');
+          const btnOk = document.getElementById('custom-dialog-btn-ok');
+
+          dialogIcon.textContent = icon;
+          dialogTitle.textContent = title;
+          dialogMsg.textContent = message;
+
+          btnCancel.classList.add('hidden');
+
+          const newBtnOk = btnOk.cloneNode(true);
+          const newBtnCancel = btnCancel.cloneNode(true);
+          btnOk.parentNode.replaceChild(newBtnOk, btnOk);
+          btnCancel.parentNode.replaceChild(newBtnCancel, btnCancel);
+
+          dialog.classList.remove('hidden');
+          setTimeout(() => {
+            dialog.classList.remove('opacity-0');
+            dialog.firstElementChild.classList.remove('scale-95');
+            dialog.firstElementChild.classList.add('scale-100');
+          }, 50);
+
+          const closeDialog = () => {
+            dialog.classList.add('opacity-0');
+            dialog.firstElementChild.classList.remove('scale-100');
+            dialog.firstElementChild.classList.add('scale-95');
+            setTimeout(() => {
+              dialog.classList.add('hidden');
+              resolve();
+            }, 300);
+          };
+
+          newBtnOk.addEventListener('click', () => closeDialog());
+        });
+      }
+
+      // ----------------- RENDER CÁC THÀNH PHẦN GIAO DIỆN -----------------
+
+      // 1. Render mục tiêu bài học
+      function renderObjective() {
+        document.getElementById('objective-display').textContent = state.objective;
+      }
+
+      // 2. Render 9 ô tròn đứt nét chứa thông điệp bí mật ở cột trái
+      function renderSecretWordSlots() {
+        const container = document.getElementById('secret-word-container');
+        container.innerHTML = '';
+        
+        const word = state.secretWord.toUpperCase();
+        
+        // Để hiển thị đẹp, chúng ta chia nhóm 3-3-3 nếu từ dài đúng 9 ký tự
+        for (let i = 0; i < 9; i++) {
+          const char = word.charAt(i) || '?';
+          const isCorrect = state.questionStates[i] === 'correct';
+          
+          const slot = document.createElement('div');
+          slot.id = `secret-slot-${i}`;
+          slot.className = `w-8 h-8 rounded-full border-2 border-dashed flex items-center justify-center font-bold text-base transition-all duration-300 bg-[#FEF2F2] border-[#EF4444] text-[#EF4444]
+            ${isCorrect ? 'animate-bounce' : 'text-transparent'}`;
+          slot.textContent = isCorrect ? char : '?';
+          
+          container.appendChild(slot);
+          
+          // Thêm khoảng cách giữa các từ nếu thích (vd chia nhóm 3 ký tự)
+          if ((i === 2 || i === 5) && i < 8) {
+            const spacer = document.createElement('div');
+            spacer.className = 'w-2 sm:w-4';
+            container.appendChild(spacer);
+          }
+        }
+      }
+
+      // 3. Kiểm tra xem một ô (r, c) có thuộc về một câu hỏi được trả lời đúng không
+      function getCellStatus(r, c) {
+        const activePresetData = PRESETS[state.preset];
+        if (!activePresetData) return null;
+        
+        for (let qIdx = 0; qIdx < 9; qIdx++) {
+          const coords = activePresetData.parts[qIdx];
+          if (!coords) continue;
+          
+          // Kiểm tra xem ô (r, c) có nằm trong danh sách tọa độ của câu hỏi này không
+          const found = coords.some(([row, col]) => row === r && col === c);
+          if (found) {
+            return {
+              questionIdx: qIdx,
+              isCorrect: state.questionStates[qIdx] === 'correct',
+              color: activePresetData.colors[qIdx]
+            };
+          }
+        }
+        return null;
+      }
+
+      // 4. Render Ma trận Bảng mật mã 15x20
+      function renderMatrixGrid() {
+        const grid = document.getElementById('matrix-grid');
+        grid.innerHTML = '';
+        
+        const rows = 15;
+        const cols = 20;
+        
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            const char = state.matrixLetters[r]?.[c] || ' ';
+            const cellStatus = getCellStatus(r, c);
+            
+            const cell = document.createElement('div');
+            cell.dataset.row = r;
+            cell.dataset.col = c;
+            
+            // Thiết lập class mặc định
+            let bgClass = "bg-white hover:bg-[#F1F5F9] text-[#1E40AF]";
+            let borderStyle = "border border-[#BFDBFE]";
+            let styleAttr = "";
+            let textClass = "font-semibold text-[#1E40AF]";
+            
+            if (cellStatus && cellStatus.isCorrect) {
+              // Tô màu rực rỡ khi câu hỏi tương ứng được trả lời đúng
+              styleAttr = `background-color: ${cellStatus.color}; border-color: ${cellStatus.color};`;
+              // Đảm bảo tương phản chữ cao (màu vàng chữ tối, các màu khác chữ trắng)
+              if (cellStatus.color === '#FBBF24' || cellStatus.color === '#FEF08A') {
+                textClass = "text-slate-900 font-extrabold scale-110";
+              } else {
+                textClass = "text-white font-extrabold scale-110";
+              }
+              bgClass = ""; // bỏ class nền để dùng style inline màu
+              borderStyle = "border";
+            }
+            
+            cell.className = `w-[18px] h-[18px] sm:w-[22px] sm:h-[22px] md:w-[26px] md:h-[26px] aspect-square flex items-center justify-center transition-all duration-300 text-[10px] sm:text-xs md:text-sm font-bold font-mono rounded-[2px] ${borderStyle} ${bgClass} ${textClass}`;
+            if (styleAttr) cell.setAttribute('style', styleAttr);
+            cell.textContent = char;
+            
+            grid.appendChild(cell);
+          }
+        }
+      }
+
+      // 5. Trình tự render các câu hỏi trắc nghiệm bên cột phải
+      function renderQuestionsList() {
+        const container = document.getElementById('questions-list');
+        container.innerHTML = '';
+        
+        state.questions.forEach((q, qIdx) => {
+          const card = document.createElement('div');
+          const isCorrect = state.questionStates[qIdx] === 'correct';
+          const isIncorrect = state.questionStates[qIdx] === 'incorrect';
+          const selectedAns = state.userAnswers[qIdx];
+          
+          let cardBorder = "border-[#BFDBFE]";
+          if (isCorrect) cardBorder = "border-emerald-300";
+          if (isIncorrect) cardBorder = "border-rose-300";
+          
+          card.className = `relative border ${cardBorder} bg-[#EFF6FF] rounded-xl p-4 pt-5 transition-all duration-200 flex flex-col gap-3 shadow-sm`;
+                
+          // Nội dung bên trong Câu hỏi
+          card.innerHTML = `
+            <div class="absolute -top-2.5 left-3 bg-[#3B82F6] text-white text-[11px] font-bold px-2 py-0.5 rounded-full z-10">Câu ${qIdx + 1}</div>
+            <div class="w-full flex justify-between items-start mb-1 mt-1">
+              <p class="text-[#1E40AF] font-bold text-sm sm:text-base leading-snug flex-1">${q.text}</p>
+              <div class="w-8 h-8 rounded-full border-2 border-dashed border-[#3B82F6] flex items-center justify-center text-[#3B82F6] font-bold text-sm shrink-0 ml-3 bg-white transition-all duration-300 ${isCorrect ? 'bg-[#3B82F6] border-[#3B82F6] text-white scale-110' : ''}">
+                ${isCorrect ? state.secretWord.charAt(qIdx).toUpperCase() : ''}
+              </div>
+            </div>
+            
+            <!-- Responsive Grid Đáp án: grid-cols-1 md:grid-cols-2 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-2 w-full">
+              ${['A', 'B', 'C', 'D'].map(opt => {
+                const optText = q[opt];
+                const isSelected = selectedAns === opt;
+                
+                let btnClass = "bg-white border border-[#D1D5DB] text-slate-700 hover:bg-[#F9FAFB]";
+                
+                if (isSelected) {
+                  if (isCorrect && opt === q.correct) {
+                    btnClass = "bg-[#DBEAFE] border-2 border-[#3B82F6] text-[#1E40AF] font-bold";
+                  } else if (isIncorrect && opt !== q.correct) {
+                    btnClass = "bg-rose-50 border-2 border-red-500 text-red-700 font-semibold line-through opacity-70 cursor-not-allowed";
+                  } else {
+                    btnClass = "bg-[#DBEAFE] border border-[#3B82F6] text-[#1E40AF] font-bold";
+                  }
+                } else {
+                  if (isCorrect) {
+                    btnClass = "border border-slate-100 bg-slate-50 text-slate-400 opacity-50 cursor-not-allowed";
+                  }
+                }
+                
+                return `
+                  <button 
+                    class="option-btn text-left text-xs sm:text-sm p-2 rounded-lg transition-all duration-150 flex items-center gap-1.5 h-auto min-h-[42px] whitespace-normal break-words shadow-sm ${btnClass}"
+                    data-qidx="${qIdx}"
+                    data-opt="${opt}"
+                    ${isCorrect ? 'disabled' : ''}
+                  >
+                    <span class="font-extrabold text-[#3B82F6] shrink-0">${opt}.</span>
+                    <span class="flex-1">${optText}</span>
+                  </button>
+                `;
+              }).join('')}
+            </div>
+          `;
+          
+          container.appendChild(card);
+        });
+
+        // Đăng ký sự kiện click cho các nút tùy chọn vừa tạo
+        document.querySelectorAll('.option-btn').forEach(btn => {
+          btn.addEventListener('click', function() {
+            const qIdx = parseInt(this.getAttribute('data-qidx'));
+            const opt = this.getAttribute('data-opt');
+            handleSelectAnswer(qIdx, opt);
+          });
+        });
+      }
+
+      // Gom toàn bộ hàm render
+      function renderAll() {
+        renderObjective();
+        renderSecretWordSlots();
+        renderMatrixGrid();
+        renderQuestionsList();
+        
+        // Gọi kích hoạt MathJax để vẽ công thức Toán - Hoá
+        if (window.MathJax && window.MathJax.typesetPromise) {
+          window.MathJax.typesetPromise();
+        }
+      }
+
+      // ----------------- LOGIC GAMEPLAY XỬ LÝ SỰ KIỆN -----------------
+
+      // Trả lời câu hỏi
+      function handleSelectAnswer(qIdx, selectedOpt) {
+        if (state.questionStates[qIdx] === 'correct') return; // đã giải đúng thì khóa
+        
+        const q = state.questions[qIdx];
+        state.userAnswers[qIdx] = selectedOpt;
+        
+        if (selectedOpt === q.correct) {
+          // Đúng!
+          state.questionStates[qIdx] = 'correct';
+          playSoundCorrect();
+          showToast(`Chính xác! Câu ${qIdx + 1} đúng, mã màu đã được phủ!`, "🟢");
+          
+          // Kiểm tra xem đã hoàn thành toàn bộ chưa
+          checkVictoryCondition();
+        } else {
+          // Sai!
+          state.questionStates[qIdx] = 'incorrect';
+          playSoundIncorrect();
+          showToast(`Chưa đúng rồi! Hãy thử suy nghĩ lại nhé.`, "🔴");
+        }
+        
+        saveStateToStorage();
+        
+        // Chỉ cập nhật giao diện của dòng câu hỏi, ô tròn & ma trận để mượt mà
+        renderSecretWordSlots();
+        renderMatrixGrid();
+        renderQuestionsList();
+      }
+
+      // Kiểm tra trạng thái chiến thắng toàn bộ
+      function checkVictoryCondition() {
+        const won = state.questionStates.every(s => s === 'correct');
+        if (won) {
+          // Trì hoãn 500ms để hiệu ứng âm thanh và tô màu chạy trước
+          setTimeout(() => {
+            showVictoryModal();
+          }, 600);
+        }
+      }
+
+      // 1. Kiểm tra thông điệp
+      document.getElementById('btn-check-message').addEventListener('click', () => {
+        const correctCount = state.questionStates.filter(s => s === 'correct').length;
+        if (correctCount === 9) {
+          showVictoryModal();
+        } else {
+          showToast(`Nhóm của bạn đã hoàn thành ${correctCount}/9 câu hỏi. Hãy tiếp tục giải nốt câu còn lại nhé!`, "💡");
+        }
+      });
+
+      // 2. Làm lại câu sai
+      document.getElementById('btn-retry-failed').addEventListener('click', () => {
+        let count = 0;
+        for (let i = 0; i < 9; i++) {
+          if (state.questionStates[i] === 'incorrect') {
+            state.questionStates[i] = 'unanswered';
+            state.userAnswers[i] = null;
+            count++;
+          }
+        }
+        if (count > 0) {
+          saveStateToStorage();
+          renderAll();
+          showToast(`Đã làm mới lại ${count} câu trả lời chưa chính xác.`, "🔄");
+        } else {
+          showToast(`Không có câu nào bị sai hoặc chưa trả lời!`, "✨");
+        }
+      });
+
+      // 3. Làm lại tất cả
+      document.getElementById('btn-reset-all').addEventListener('click', async () => {
+        const confirmed = await customConfirm("Bạn có chắc chắn muốn làm lại từ đầu không? Tất cả đáp án đã trả lời sẽ được thiết lập lại.", "♻️", "Làm lại từ đầu");
+        if (confirmed) {
+          state.userAnswers = Array(9).fill(null);
+          state.questionStates = Array(9).fill('unanswered');
+          generateMatrixLetters();
+          saveStateToStorage();
+          renderAll();
+          showToast(`Trò chơi đã được thiết lập lại từ đầu. Sẵn sàng!`, "♻️");
+        }
+      });
+
+      // ----------------- HIỆU ỨNG CONFETTI HOÀN THÀNH CHIẾN THẮNG -----------------
+      let confettiActive = false;
+      let confettiInterval = null;
+      
+      function runConfetti() {
+        const canvas = document.getElementById('victory-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = canvas.parentElement.clientWidth;
+        canvas.height = canvas.parentElement.clientHeight;
+        
+        const colors = ['#f43f5e', '#10b981', '#3b82f6', '#f59e0b', '#ec4899', '#8b5cf6'];
+        const confettiCount = 120;
+        const confetti = [];
+        
+        for (let i = 0; i < confettiCount; i++) {
+          confetti.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height - canvas.height,
+            r: Math.random() * 6 + 4,
+            d: Math.random() * canvas.height,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            tilt: Math.random() * 10 - 5,
+            tiltAngleIncremental: Math.random() * 0.07 + 0.02,
+            tiltAngle: 0
+          });
+        }
+        
+        confettiActive = true;
+        
+        function draw() {
+          if (!confettiActive) return;
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          
+          confetti.forEach((p, idx) => {
+            p.tiltAngle += p.tiltAngleIncremental;
+            p.y += (Math.cos(p.d) + 3 + p.r / 2) / 2;
+            p.tilt = Math.sin(p.tiltAngle - idx / 3) * 15;
+            
+            if (p.y > canvas.height) {
+              p.x = Math.random() * canvas.width;
+              p.y = -20;
+              p.tilt = Math.random() * 10 - 5;
+            }
+            
+            ctx.beginPath();
+            ctx.lineWidth = p.r;
+            ctx.strokeStyle = p.color;
+            ctx.moveTo(p.x + p.tilt + p.r / 2, p.y);
+            ctx.lineTo(p.x + p.tilt, p.y + p.tilt + p.r / 2);
+            ctx.stroke();
+          });
+          
+          requestAnimationFrame(draw);
+        }
+        
+        draw();
+      }
+
+      function stopConfetti() {
+        confettiActive = false;
+      }
+
+      // ----------------- ĐIỀU KHIỂN CÁC MODAL -----------------
+
+      // Nút Âm thanh Bật/Tắt
+      document.getElementById('btn-sound').addEventListener('click', () => {
+        state.soundEnabled = !state.soundEnabled;
+        const soundIcon = document.getElementById('sound-icon');
+        const soundText = document.getElementById('sound-text');
+        
+        if (state.soundEnabled) {
+          soundIcon.textContent = "🔊";
+          soundText.textContent = "Bật âm";
+          showToast("Âm thanh đã bật", "🔊");
+        } else {
+          soundIcon.textContent = "🔇";
+          soundText.textContent = "Tắt âm";
+          showToast("Âm thanh đã tắt", "🔇");
+        }
+        saveStateToStorage();
+      });
+
+      // Mở modal cài đặt
+      document.getElementById('btn-settings').addEventListener('click', () => {
+        const modal = document.getElementById('modal-settings');
+        
+        // Gán giá trị hiện tại lên form cấu hình
+        document.getElementById('input-objective').value = state.objective;
+        document.getElementById('select-preset').value = state.preset;
+        document.getElementById('input-secret-word').value = state.secretWord;
+        document.getElementById('textarea-questions').value = JSON.stringify(state.questions, null, 2);
+        
+        // Cập nhật trạng thái file nhạc
+        document.getElementById('status-audio-correct').textContent = state.audioCorrect ? "🎵 Đã tải lên nhạc đúng" : "Sử dụng synthesizer mặc định";
+        document.getElementById('status-audio-incorrect').textContent = state.audioIncorrect ? "🎵 Đã tải lên nhạc sai" : "Sử dụng synthesizer mặc định";
+
+        // Mở với hiệu ứng mượt mà
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+          modal.classList.remove('opacity-0');
+          modal.firstElementChild.classList.remove('scale-95');
+          modal.firstElementChild.classList.add('scale-100');
+        }, 50);
+      });
+
+      // Đóng modal cài đặt
+      function closeSettingsModal() {
+        const modal = document.getElementById('modal-settings');
+        modal.classList.add('opacity-0');
+        modal.firstElementChild.classList.remove('scale-100');
+        modal.firstElementChild.classList.add('scale-95');
+        setTimeout(() => {
+          modal.classList.add('hidden');
+        }, 300);
+      }
+      
+      document.getElementById('modal-close-x').addEventListener('click', closeSettingsModal);
+      document.getElementById('modal-btn-cancel').addEventListener('click', closeSettingsModal);
+
+      // Khôi phục câu hỏi mặc định trong cài đặt
+      document.getElementById('btn-reset-json-default').addEventListener('click', async () => {
+        const confirmed = await customConfirm("Bạn có muốn khôi phục 9 câu hỏi trắc nghiệm Hoá Học mặc định ban đầu không?", "🔄", "Khôi phục câu hỏi");
+        if (confirmed) {
+          document.getElementById('textarea-questions').value = JSON.stringify(DEFAULT_QUESTIONS, null, 2);
+          showToast("Đã nhập mẫu 9 câu hỏi hóa học mặc định.", "📝");
+        }
+      });
+
+      // Đọc file nhạc đúng
+      document.getElementById('file-audio-correct').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function(evt) {
+            state.audioCorrect = evt.target.result;
+            document.getElementById('status-audio-correct').textContent = "🎵 Đã tải lên nhạc đúng";
+            showToast("Đã nạp file âm thanh ĐÚNG tùy chỉnh thành công!", "🎵");
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+
+      // Đọc file nhạc sai
+      document.getElementById('file-audio-incorrect').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function(evt) {
+            state.audioIncorrect = evt.target.result;
+            document.getElementById('status-audio-incorrect').textContent = "🎵 Đã tải lên nhạc sai";
+            showToast("Đã nạp file âm thanh SAI tùy chỉnh thành công!", "🎵");
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+
+      // Lưu cài đặt cấu hình
+      document.getElementById('modal-btn-save').addEventListener('click', async () => {
+        const objectiveVal = document.getElementById('input-objective').value.trim();
+        const presetVal = document.getElementById('select-preset').value;
+        const secretWordVal = document.getElementById('input-secret-word').value.trim().toUpperCase();
+        const questionsJsonVal = document.getElementById('textarea-questions').value.trim();
+        
+        // 1. Kiểm tra tính hợp lệ của thông điệp bí mật (độ dài đúng bằng 9)
+        if (secretWordVal.length !== 9) {
+          await customAlert("Lỗi: Thông điệp bí mật phải dài đúng 9 ký tự!", "❌", "Lỗi cấu hình");
+          return;
+        }
+
+        // 2. Kiểm tra tính hợp lệ của JSON câu hỏi
+        let parsedQuestions = [];
+        try {
+          parsedQuestions = JSON.parse(questionsJsonVal);
+          if (!Array.isArray(parsedQuestions)) {
+            throw new Error("Dữ liệu câu hỏi phải là một mảng JSON!");
+          }
+          if (parsedQuestions.length !== 9) {
+            throw new Error("Mảng câu hỏi phải chứa đúng chính xác 9 câu hỏi!");
+          }
+          
+          // Kiểm tra chi tiết từng thuộc tính câu hỏi
+          const requiredKeys = ['text', 'A', 'B', 'C', 'D', 'correct'];
+          parsedQuestions.forEach((q, idx) => {
+            requiredKeys.forEach(key => {
+              if (q[key] === undefined || q[key] === null) {
+                throw new Error(`Câu hỏi số ${idx + 1} thiếu thuộc tính bắt buộc: '${key}'`);
+              }
+            });
+            if (!['A', 'B', 'C', 'D'].includes(q.correct.toUpperCase())) {
+              throw new Error(`Đáp án đúng 'correct' của câu ${idx + 1} phải là một trong các chữ cái: A, B, C, D`);
+            }
+            q.correct = q.correct.toUpperCase();
+          });
+        } catch (e) {
+          await customAlert("Lỗi cấu hình Ngân hàng câu hỏi không hợp lệ:\n" + e.message, "❌", "Lỗi cấu hình");
+          return;
+        }
+
+        // Lưu toàn bộ dữ liệu hợp lệ vào trạng thái
+        state.objective = objectiveVal || "Chọn đáp án đúng để tô màu bảng mật mã và giải mã thông điệp bí mật.";
+        state.preset = presetVal;
+        state.secretWord = secretWordVal;
+        state.questions = parsedQuestions;
+        
+        // Reset trạng thái trả lời của người dùng để họ giải lại từ đầu với bộ câu hỏi mới
+        state.userAnswers = Array(9).fill(null);
+        state.questionStates = Array(9).fill('unanswered');
+        
+        // Tạo lại bảng chữ cái ngẫu nhiên
+        generateMatrixLetters();
+        
+        saveStateToStorage();
+        closeSettingsModal();
+        renderAll();
+        
+        showToast("Cập nhật và làm mới cấu hình trò chơi thành công!", "💾");
+      });
+
+      // Mở modal Chiến thắng
+      function showVictoryModal() {
+        const modal = document.getElementById('modal-victory');
+        const textSpan = document.getElementById('victory-message-text');
+        
+        // Hiển thị thông điệp cách đều nhau
+        const spacedWord = state.secretWord.toUpperCase().split('').join(' ');
+        textSpan.textContent = spacedWord;
+        
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+          modal.classList.remove('opacity-0');
+          modal.firstElementChild.classList.remove('scale-95');
+          modal.firstElementChild.classList.add('scale-100');
+          runConfetti();
+        }, 50);
+      }
+
+      // Đóng modal Chiến thắng
+      document.getElementById('victory-btn-close').addEventListener('click', () => {
+        const modal = document.getElementById('modal-victory');
+        modal.classList.add('opacity-0');
+        modal.firstElementChild.classList.remove('scale-100');
+        modal.firstElementChild.classList.add('scale-95');
+        setTimeout(() => {
+          modal.classList.add('hidden');
+          stopConfetti();
+        }, 300);
+      });
+
+      // Khởi chạy khi tài liệu load xong
+      window.addEventListener('DOMContentLoaded', () => {
+        loadState();
+        renderAll();
+      });
+    </script>
+  </body>
+</html>
