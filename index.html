@@ -82,10 +82,15 @@
       
       <!-- HEADER -->
       <header class="flex flex-col md:flex-row items-center justify-between gap-4 border-b-2 border-slate-100 pb-4 mb-6">
-        <!-- Nhãn Nhóm màu hồng đậm dạng thẻ tag rounded-full -->
-        <div class="bg-[#DB2777] text-white font-bold text-sm py-1.5 px-4 rounded-full tracking-wider shadow-sm shrink-0 self-start md:self-center uppercase">
-          NHÓM........
-        </div>
+        <!-- Nhãn Nhóm màu hồng đậm dạng thẻ tag rounded-full có thể nhập trực tiếp -->
+        <input 
+          type="text" 
+          id="input-group-name" 
+          class="bg-[#DB2777] hover:bg-[#BE185D] focus:bg-[#9D174D] focus:ring-2 focus:ring-pink-300 text-white placeholder-pink-200 font-extrabold text-sm py-1.5 px-4 rounded-full tracking-wider shadow-sm shrink-0 self-start md:self-center uppercase text-center outline-none transition-all duration-150 w-48 border-none" 
+          placeholder="TÊN / NHÓM..." 
+          value="NHÓM........" 
+          title="Nhấp để nhập tên học sinh hoặc tên nhóm"
+        />
         
         <!-- Tiêu đề lớn in hoa đậm màu đỏ -->
         <h1 class="text-[#DC2626] font-black text-2xl md:text-3xl lg:text-4xl tracking-wider text-center uppercase flex-1 font-sans">
@@ -475,6 +480,7 @@
         objective: "Chọn đáp án đúng để tô màu bảng mật mã và giải mã thông điệp bí mật.",
         preset: "flower", // flower, beaker, cat, smiley
         secretWord: "HOAHOCVUI", // Phải đủ đúng 9 kí tự
+        studentName: "NHÓM........",
         questions: JSON.parse(JSON.stringify(DEFAULT_QUESTIONS)),
         soundEnabled: true,
         userAnswers: Array(9).fill(null), // Lưu kí tự đã chọn: 'A', 'B', 'C', 'D' hoặc null
@@ -493,6 +499,7 @@
             if (parsed.objective) state.objective = parsed.objective;
             if (parsed.preset) state.preset = parsed.preset;
             if (parsed.secretWord && parsed.secretWord.length === 9) state.secretWord = parsed.secretWord;
+            if (parsed.studentName !== undefined) state.studentName = parsed.studentName;
             
             // Check if saved questions contain LaTeX strange characters like "\\(" or "\\text"
             let shouldResetQuestions = false;
@@ -546,6 +553,7 @@
           objective: state.objective,
           preset: state.preset,
           secretWord: state.secretWord,
+          studentName: state.studentName,
           questions: state.questions,
           soundEnabled: state.soundEnabled,
           userAnswers: state.userAnswers,
@@ -1318,6 +1326,18 @@
       // Khởi chạy khi tài liệu load xong
       window.addEventListener('DOMContentLoaded', () => {
         loadState();
+        
+        // Thiết lập giá trị và lắng nghe sự kiện của ô nhập tên học sinh / nhóm
+        const groupInput = document.getElementById('input-group-name');
+        if (groupInput) {
+          groupInput.value = state.studentName || "NHÓM........";
+          
+          groupInput.addEventListener('input', (e) => {
+            state.studentName = e.target.value;
+            saveStateToStorage();
+          });
+        }
+        
         renderAll();
       });
     </script>
