@@ -69,7 +69,7 @@
       }
 
       /* Đảm bảo ma trận hiển thị đúng 20 cột */
-      #matrix-grid {
+      #matrix-grid, #victory-matrix-mini {
         display: grid;
         grid-template-columns: repeat(20, minmax(0, 1fr));
       }
@@ -314,11 +314,11 @@
 
           <!-- Nút hành động phía cuối màn hình -->
           <div class="flex flex-col sm:flex-row gap-2.5 w-full justify-center">
-            <button id="victory-btn-close" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 px-5 rounded-xl transition-colors text-xs sm:text-sm flex items-center justify-center gap-1.5 order-2 sm:order-1 cursor-pointer font-sans">
-              <span>👁️</span> Xem chi tiết bảng
+            <button id="victory-btn-close" class="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-extrabold py-3 px-6 rounded-xl shadow-md transition-all duration-150 text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer font-sans flex-1">
+              <span>🏠</span> Xem lại bức tranh (Về trang chủ)
             </button>
-            <button id="victory-btn-restart" class="bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-extrabold py-2.5 px-6 rounded-xl shadow-md transition-colors text-xs sm:text-sm flex items-center justify-center gap-1.5 order-1 sm:order-2 cursor-pointer font-sans">
-              <span>🏠</span> Về trang chủ / Chơi lại
+            <button id="victory-btn-restart" class="bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-extrabold py-3 px-6 rounded-xl shadow-md transition-all duration-150 text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer font-sans flex-1">
+              <span>♻️</span> Chơi lượt mới (Reset)
             </button>
           </div>
         </div>
@@ -461,7 +461,7 @@
           "B": "Phản ứng càng toả ra nhiều nhiệt càng dễ tự xảy ra.",
           "C": "Phản ứng oxi hoá chất béo cung cấp nhiệt cho cơ thể.",
           "D": "Các phản ứng khi đun nóng đều dễ xảy ra hơn.",
-          "correct": "D"
+          "correct": "B"
         },
         {
           "text": "Dấu của biến thiên enthalpy cho biết phản ứng toả nhiệt hay thu nhiệt. Phát biểu nào sau đây đúng?",
@@ -1353,7 +1353,7 @@
               // Cỡ cực nhỏ tối ưu hiển thị trọn vẹn trên màn hình dọc điện thoại: 10px (sm: 13px)
               cell.className = "w-[10px] h-[10px] sm:w-[13px] sm:h-[13px] aspect-square rounded-[1px] transition-all duration-300";
               
-              if (cellStatus && cellStatus.isCorrect) {
+              if (cellStatus) {
                 cell.style.backgroundColor = cellStatus.color;
               } else {
                 cell.className += " bg-white border border-slate-200/50";
