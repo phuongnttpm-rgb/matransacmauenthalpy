@@ -552,6 +552,14 @@
                 parsed.questionStates[6] = 'unanswered';
               }
 
+              // Sửa lỗi câu 5 nếu người dùng đang dùng phiên bản cũ chứa đáp án cũ (D)
+              if (state.questions[4] && state.questions[4].correct === 'D') {
+                state.questions[4] = JSON.parse(JSON.stringify(DEFAULT_QUESTIONS[4]));
+                // Chỉ reset riêng câu 5 về chưa trả lời để tránh làm mất tiến trình các câu khác
+                parsed.userAnswers[4] = null;
+                parsed.questionStates[4] = 'unanswered';
+              }
+
               if (parsed.soundEnabled !== undefined) state.soundEnabled = parsed.soundEnabled;
               if (parsed.audioCorrect) state.audioCorrect = parsed.audioCorrect;
               if (parsed.audioIncorrect) state.audioIncorrect = parsed.audioIncorrect;
