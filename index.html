@@ -269,36 +269,58 @@
 
     <!-- MODAL POPUP THÔNG BÁO CHIẾN THẮNG / KẾT QUẢ (VICTORY MODAL) -->
     <div id="modal-victory" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
-      <div class="bg-white w-full max-w-lg rounded-2xl border-4 border-[#3B82F6] p-8 shadow-2xl m-4 text-center transform scale-95 transition-transform duration-300 relative overflow-hidden">
+      <div class="bg-white w-full max-w-lg rounded-2xl border-4 border-[#3B82F6] p-5 sm:p-6 md:p-8 shadow-2xl m-4 text-center transform scale-95 transition-transform duration-300 relative overflow-hidden max-h-[95vh] overflow-y-auto custom-scrollbar">
         
         <!-- Canvas confetti cục bộ -->
         <canvas id="victory-canvas" class="absolute inset-0 pointer-events-none w-full h-full z-0"></canvas>
         
-        <div class="relative z-10">
-          <div class="text-6xl mb-4 animate-bounce">🏆</div>
-          <h3 class="text-[#3B82F6] font-black text-3xl md:text-4xl mb-3 tracking-wide uppercase">
+        <div class="relative z-10 flex flex-col items-center justify-center">
+          <div class="text-5xl sm:text-6xl mb-3 animate-bounce">🏆</div>
+          <h3 class="text-[#3B82F6] font-black text-2xl sm:text-3xl md:text-4xl mb-2 tracking-wide uppercase font-sans">
             XUẤT SẮC HOÀN THÀNH!
           </h3>
-          <p class="text-slate-600 font-medium mb-6">
-            Chúc mừng nhóm của bạn đã hoàn thành xuất sắc phiếu bài tập nhóm và giải mã thành công thông điệp bí mật!
+          
+          <!-- Lời chúc mừng cá nhân hóa theo Tên nhóm / Học sinh -->
+          <p id="victory-congrats-text" class="text-slate-600 text-xs sm:text-sm font-semibold mb-4 leading-relaxed px-1">
+            Chúc mừng bạn đã hoàn thành xuất sắc phiếu bài tập nhóm và giải mã thành công thông điệp bí mật!
           </p>
 
           <!-- Hiện thông điệp giải mã thành công -->
-          <div class="bg-blue-50 rounded-xl p-4 border border-blue-100 mb-6">
-            <div class="text-xs uppercase text-[#3B82F6] tracking-widest font-bold mb-1">Thông điệp giải mã được:</div>
-            <div id="victory-message-text" class="text-3xl md:text-4xl font-extrabold text-[#1E40AF] tracking-[0.25em] font-mono select-all">
+          <div class="bg-blue-50 rounded-xl p-3.5 border border-blue-100 mb-4 w-full max-w-sm">
+            <div class="text-[10px] sm:text-xs uppercase text-[#3B82F6] tracking-widest font-extrabold mb-1">Thông điệp giải mã được:</div>
+            <div id="victory-message-text" class="text-2xl sm:text-3xl font-extrabold text-[#1E40AF] tracking-[0.2em] font-mono select-all">
               H O A H O C V U I
             </div>
           </div>
 
-          <p class="text-xs text-slate-400 mb-6">
-            Hãy chiêm ngưỡng tác phẩm pixel art đầy sắc màu vừa được tô hoàn thiện trên bảng mật mã!
-          </p>
+          <!-- PHẦN THÀNH PHẨM TRANH PHÙ HỢP TRÊN ĐIỆN THOẠI (PIXEL ART MINIATURE) -->
+          <div class="w-full bg-gradient-to-br from-slate-50 to-blue-50 border-2 border-dashed border-blue-200 rounded-2xl p-3 sm:p-4 mb-5 flex flex-col items-center justify-center shadow-inner relative">
+            <span class="absolute top-2 right-2 text-[9px] sm:text-xs font-bold bg-emerald-500 text-white px-2 py-0.5 rounded-full shadow-sm font-sans">Thành phẩm 🌟</span>
+            <h4 id="victory-preset-name" class="text-[#1E40AF] font-bold text-xs sm:text-sm mb-2.5 flex items-center gap-1.5 font-sans">
+              🎨 Tác phẩm: Bông hoa hướng dương
+            </h4>
+            
+            <!-- Bảng màu mini pixel art 15x20 -->
+            <div class="bg-white p-2 rounded-xl border border-slate-200/80 shadow-md flex items-center justify-center overflow-hidden">
+              <div id="victory-matrix-mini" class="grid grid-cols-20 gap-[1px] bg-slate-100 p-0.5 rounded-lg select-none">
+                <!-- JS dynamically renders 15x20 cells here -->
+              </div>
+            </div>
+            
+            <p class="text-[10px] text-slate-400 mt-2 font-medium font-sans">
+              Bạn có thể chụp màn hình để lưu lại thành tích học tập này!
+            </p>
+          </div>
 
-          <!-- Nút Đóng -->
-          <button id="victory-btn-close" class="bg-[#3B82F6] hover:bg-[#2563EB] active:bg-[#1E40AF] text-white font-bold py-2.5 px-8 rounded-lg shadow-md transition-colors">
-            Tuyệt vời! Quay lại xem
-          </button>
+          <!-- Nút hành động phía cuối màn hình -->
+          <div class="flex flex-col sm:flex-row gap-2.5 w-full justify-center">
+            <button id="victory-btn-close" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 px-5 rounded-xl transition-colors text-xs sm:text-sm flex items-center justify-center gap-1.5 order-2 sm:order-1 cursor-pointer font-sans">
+              <span>👁️</span> Xem chi tiết bảng
+            </button>
+            <button id="victory-btn-restart" class="bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-extrabold py-2.5 px-6 rounded-xl shadow-md transition-colors text-xs sm:text-sm flex items-center justify-center gap-1.5 order-1 sm:order-2 cursor-pointer font-sans">
+              <span>🏠</span> Về trang chủ / Chơi lại
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -1302,6 +1324,45 @@
         const spacedWord = state.secretWord.toUpperCase().split('').join(' ');
         textSpan.textContent = spacedWord;
         
+        // 1. Cá nhân hóa lời chúc mừng dựa trên tên nhóm/học sinh
+        const congratsText = document.getElementById('victory-congrats-text');
+        if (congratsText) {
+          const rawName = (state.studentName || "").trim();
+          const name = (rawName && rawName !== "NHÓM........") ? rawName : "nhóm của bạn";
+          congratsText.innerHTML = `Chúc mừng <span class="text-[#DB2777] font-extrabold uppercase bg-pink-50 px-2 py-0.5 rounded border border-pink-150">${name}</span> đã hoàn thành xuất sắc phiếu bài tập nhóm và giải mã thành công thông điệp bí mật!`;
+        }
+        
+        // 2. Gán tên tác phẩm preset
+        const presetNameLabel = document.getElementById('victory-preset-name');
+        if (presetNameLabel) {
+          const presetObj = PRESETS[state.preset];
+          presetNameLabel.innerHTML = `🎨 Tác phẩm: <span class="font-extrabold text-[#3B82F6]">${presetObj ? presetObj.name : "Ma trận sắc màu"}</span>`;
+        }
+        
+        // 3. Render bảng màu mini 15x20 tối ưu cho điện thoại di động
+        const miniGrid = document.getElementById('victory-matrix-mini');
+        if (miniGrid) {
+          miniGrid.innerHTML = '';
+          const rows = 15;
+          const cols = 20;
+          for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+              const cellStatus = getCellStatus(r, c);
+              const cell = document.createElement('div');
+              
+              // Cỡ cực nhỏ tối ưu hiển thị trọn vẹn trên màn hình dọc điện thoại: 10px (sm: 13px)
+              cell.className = "w-[10px] h-[10px] sm:w-[13px] sm:h-[13px] aspect-square rounded-[1px] transition-all duration-300";
+              
+              if (cellStatus && cellStatus.isCorrect) {
+                cell.style.backgroundColor = cellStatus.color;
+              } else {
+                cell.className += " bg-white border border-slate-200/50";
+              }
+              miniGrid.appendChild(cell);
+            }
+          }
+        }
+        
         modal.classList.remove('hidden');
         setTimeout(() => {
           modal.classList.remove('opacity-0');
@@ -1321,6 +1382,30 @@
           modal.classList.add('hidden');
           stopConfetti();
         }, 300);
+      });
+
+      // Sự kiện nút Chơi lại / Về trang chủ trên Modal Chiến thắng
+      document.getElementById('victory-btn-restart').addEventListener('click', async () => {
+        const confirmed = await customConfirm("Bạn có chắc chắn muốn làm lại từ đầu không? Toàn bộ câu trả lời của nhóm sẽ được thiết lập lại để bắt đầu lượt chơi mới.", "♻️", "Chơi lại từ đầu");
+        if (confirmed) {
+          // Ẩn modal chiến thắng trước
+          const modal = document.getElementById('modal-victory');
+          modal.classList.add('opacity-0');
+          modal.firstElementChild.classList.remove('scale-100');
+          modal.firstElementChild.classList.add('scale-95');
+          setTimeout(() => {
+            modal.classList.add('hidden');
+            stopConfetti();
+          }, 300);
+          
+          // Đặt lại dữ liệu trò chơi về trạng thái ban đầu
+          state.userAnswers = Array(9).fill(null);
+          state.questionStates = Array(9).fill('unanswered');
+          generateMatrixLetters();
+          saveStateToStorage();
+          renderAll();
+          showToast("Đã thiết lập lại trò chơi! Chúc các bạn học sinh có lượt chơi mới thật vui vẻ!", "♻️");
+        }
       });
 
       // Khởi chạy khi tài liệu load xong
